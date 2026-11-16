@@ -1,8 +1,8 @@
 {
   "gateway_id": "rpi4-gw-001",
   "chamber_id": "chamber-alpha-01",
-  "cloud_base_url": "http://localhost:3000",
-  "cloud_camera_url": "http://localhost:3000/api/v1/camera",
+  "cloud_base_url": "https://floraq-intelligent-plant-trainer.ai.studio",
+  "cloud_camera_url": "https://floraq-intelligent-plant-trainer.ai.studio/api/v1/camera",
   "gateway_api_key": "floraq_gw_secret_alpha_8829",
   "esp32_serial_port": "/dev/ttyUSB0",
   "esp32_serial_baud": 115200,
