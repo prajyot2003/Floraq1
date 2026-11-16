@@ -1,0 +1,4 @@
+requests>=2.31.0
+pyserial>=3.5
+schedule>=1.2.0
+pillow>=10.2.0

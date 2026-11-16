@@ -1,0 +1,18 @@
+{
+  "gateway_id": "rpi4-gw-001",
+  "chamber_id": "chamber-alpha-01",
+  "cloud_base_url": "http://localhost:3000",
+  "cloud_camera_url": "http://localhost:3000/api/v1/camera",
+  "gateway_api_key": "floraq_gw_secret_alpha_8829",
+  "esp32_serial_port": "/dev/ttyUSB0",
+  "esp32_serial_baud": 115200,
+  "heartbeat_interval_seconds": 20,
+  "camera": {
+    "camera_id": "cam-csi-01",
+    "resolution": [1920, 1080],
+    "framerate": 24,
+    "rotation": 0,
+    "scheduled_interval_minutes": 60,
+    "snapshot_push_interval_seconds": 3
+  }
+}

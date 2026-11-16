@@ -1,0 +1,6 @@
+{
+  "name": "FloraQ — Intelligent Plant Trainer",
+  "description": "Autonomous Plant Trainer Chamber platform with real-time IoT sensor telemetry, live camera streaming, growth cycle tracking, and AI plant disease detection.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
