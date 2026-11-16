@@ -35,7 +35,7 @@ if not os.path.exists(CONFIG_PATH):
 with open(CONFIG_PATH, "r") as f:
     config = json.load(f)
 
-CLOUD_BASE_URL = config.get("cloud_base_url", "http://localhost:3000").rstrip("/")
+CLOUD_BASE_URL = config.get("cloud_base_url", "https://floraq-intelligent-plant-trainer.ai.studio").rstrip("/")
 GATEWAY_KEY = config["gateway_api_key"]
 SERIAL_PORT = config.get("esp32_serial_port", "/dev/ttyUSB0")
 SERIAL_BAUD = int(config.get("esp32_serial_baud", 115200))

@@ -55,7 +55,8 @@
    ```bash
    cp config.example.json config.json
    ```
-   Set `cloud_base_url`, `gateway_api_key`, and `esp32_serial_port` (`/dev/ttyUSB0` or `/dev/ttyACM0`).
+   `cloud_base_url` defaults to the live app. Use `http://<your-mac-ip>:3000` only when running the server locally (never `localhost` — on the Pi that means the Pi itself).
+   Set `gateway_api_key` and `esp32_serial_port` (`/dev/ttyUSB0` or `/dev/ttyACM0`; check with `ls /dev/ttyUSB* /dev/ttyACM*`).
 
 3. Start the RPi 4 USB Serial Bridge & Camera Streamer:
    ```bash
