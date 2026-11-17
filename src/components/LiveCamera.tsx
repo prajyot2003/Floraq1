@@ -116,11 +116,10 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
         light_intensity: readings?.light_intensity?.value,
       };
 
-      // Create new captured photo using current camera feed
+      // Server stores the latest live frame pushed by the Raspberry Pi camera
       const result = await api.captureImage({
         plant_id: plant.id,
         camera_id: camera?.id || 'cam-csi-01',
-        image_data_url: plant.primary_image_url || undefined,
         capture_mode: 'manual',
         sensor_snapshot: sensorSnapshot,
       });

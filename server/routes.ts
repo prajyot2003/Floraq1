@@ -1471,6 +1471,18 @@ apiRouter.post('/camera/images', requireAuth, (req: AuthenticatedRequest, res) =
     return;
   }
 
+  // Manual captures use the latest frame pushed by the Raspberry Pi camera.
+  const cameraId = camera_id || 'cam-csi-01';
+  const liveFrame = latestCameraFrames.get(cameraId);
+  const liveFrameFresh = liveFrame && Date.now() - new Date(liveFrame.updatedAt).getTime() < 30_000;
+  const photoDataUrl = image_data_url || (liveFrameFresh ? liveFrame!.dataUrl : '');
+  if (!photoDataUrl) {
+    res.status(409).json({
+      error: 'No live frame from the Raspberry Pi camera in the last 30 seconds. Check that floraq-camera is running on the Pi.',
+    });
+    return;
+  }
+
   const cycles = db.getCyclesByPlant(plant.id);
   const activeCycle = cycles.find((c) => c.status === 'active') || cycles[cycles.length - 1];
   const now = new Date().toISOString();
@@ -1481,9 +1493,9 @@ apiRouter.post('/camera/images', requireAuth, (req: AuthenticatedRequest, res) =
     owner_id: req.user!.id,
     plant_id: plant.id,
     cycle_id: activeCycle?.id || null,
-    camera_id: camera_id || 'cam-csi-01',
+    camera_id: cameraId,
     storage_key: `chambers/${plant.chamber_id}/plants/${plant.id}/${imageId}.jpg`,
-    image_data_url: image_data_url || plant.primary_image_url || '',
+    image_data_url: photoDataUrl,
     captured_at: now,
     uploaded_at: now,
     capture_mode: capture_mode || 'manual',
