@@ -13,6 +13,6 @@
     "framerate": 24,
     "rotation": 0,
     "scheduled_interval_minutes": 60,
-    "snapshot_push_interval_seconds": 3
+    "snapshot_push_interval_seconds": 1
   }
 }

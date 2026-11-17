@@ -95,7 +95,7 @@ def push_live_snapshot():
 
 def main():
     logger.info(f"Starting FloraQ Camera Daemon for Camera: {CAMERA_ID} in Chamber: {CHAMBER_ID}")
-    push_interval = config.get("camera", {}).get("snapshot_push_interval_seconds", 3)
+    push_interval = config.get("camera", {}).get("snapshot_push_interval_seconds", 1)
 
     while True:
         push_live_snapshot()
