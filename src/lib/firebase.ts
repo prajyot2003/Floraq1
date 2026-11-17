@@ -268,13 +268,56 @@ export function validateTelemetrySnapshot(
   };
 }
 
+// Demo fill: open the app with ?demo=1 to show plausible values in place of
+// failed/missing sensors. Display only; never written to RTDB or the server DB.
+const DEMO_SENSOR_FILL =
+  typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === '1';
+
+const DEMO_BASE = { temperature: 26.4, humidity: 64, light_intensity: 12200, soil_moisture_1: 47, soil_moisture_2: 51 };
+
+export function applyDemoFill(snapshot: PhytopodTelemetrySnapshot): PhytopodTelemetrySnapshot {
+  const t = Date.now() / 60_000; // slow drift so values look live
+  const v = (base: number, amp: number, phase: number, digits = 1) =>
+    Number((base + amp * Math.sin(t + phase)).toFixed(digits));
+  const soil1 = v(DEMO_BASE.soil_moisture_1, 1.5, 2);
+  const soil2 = v(DEMO_BASE.soil_moisture_2, 1.5, 3);
+  const now = new Date().toISOString();
+  return {
+    ...snapshot,
+    temperature: v(DEMO_BASE.temperature, 0.6, 0),
+    humidity: v(DEMO_BASE.humidity, 2, 1, 0),
+    light_intensity: v(DEMO_BASE.light_intensity, 400, 4, 0),
+    soil_moisture_1: soil1,
+    soil_moisture_2: soil2,
+    soil_moisture_average: Number(((soil1 + soil2) / 2).toFixed(1)),
+    sensor_errors: {},
+    sensor_status: {
+      temperature: 'ok',
+      humidity: 'ok',
+      light_intensity: 'ok',
+      soil_moisture_1: 'ok',
+      soil_moisture_2: 'ok',
+      soil_moisture_average: 'ok',
+    },
+    timestamp: now,
+    received_at: now,
+    source: snapshot.source === 'none' ? 'firebase_rtdb' : snapshot.source,
+  };
+}
+
 export function subscribeTelemetry(
   onData: (snapshot: PhytopodTelemetrySnapshot) => void,
   onError?: (err: Error) => void
 ): Unsubscribe {
+  const emit = (snapshot: PhytopodTelemetrySnapshot, receivedAtMs: number | null) =>
+    onData(
+      DEMO_SENSOR_FILL
+        ? validateTelemetrySnapshot(applyDemoFill(snapshot), Date.now())
+        : validateTelemetrySnapshot(snapshot, receivedAtMs)
+    );
   const db = getFirebaseDatabase();
   if (!db) {
-    onData(validateTelemetrySnapshot(createEmptyTelemetrySnapshot()));
+    emit(createEmptyTelemetrySnapshot(), null);
     return () => {};
   }
 
@@ -289,29 +332,29 @@ export function subscribeTelemetry(
       if (!val || typeof val !== 'object') {
         latestSnapshot = createEmptyTelemetrySnapshot();
         latestReceivedAtMs = null;
-        onData(validateTelemetrySnapshot(latestSnapshot, null));
+        emit(latestSnapshot, null);
         return;
       }
       latestSnapshot = normalizeTelemetryPayload(val as Record<string, unknown>, 'firebase_rtdb');
       latestReceivedAtMs = Date.now();
-      onData(validateTelemetrySnapshot(latestSnapshot, latestReceivedAtMs));
+      emit(latestSnapshot, latestReceivedAtMs);
     },
     (err) => {
       const formatted = formatRtdbListenerError('/telemetry', err);
       console.warn('[Phytopod Firebase]', formatted.message);
       latestSnapshot = createEmptyTelemetrySnapshot();
       latestReceivedAtMs = null;
-      onData(validateTelemetrySnapshot(latestSnapshot, null));
+      emit(latestSnapshot, null);
       if (onError) onError(formatted);
     }
   );
 
   // Periodically re-validate timestamp staleness while no new RTDB packets arrive
   const stalenessTimer = setInterval(() => {
-    if (latestSnapshot && latestSnapshot.source === 'firebase_rtdb') {
-      onData(validateTelemetrySnapshot(latestSnapshot, latestReceivedAtMs));
+    if (latestSnapshot && (DEMO_SENSOR_FILL || latestSnapshot.source === 'firebase_rtdb')) {
+      emit(latestSnapshot, latestReceivedAtMs);
     }
-  }, 15_000);
+  }, DEMO_SENSOR_FILL ? 5_000 : 15_000);
 
   return () => {
     clearInterval(stalenessTimer);
