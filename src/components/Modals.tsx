@@ -13,9 +13,22 @@ import {
   Phone,
   Sparkles,
   Key,
+  Cloud,
+  CheckCircle2,
 } from 'lucide-react';
+import { User as FirebaseUser } from 'firebase/auth';
 import { Plant, UserProfile } from '../types.js';
 import { api } from '../api.js';
+import {
+  signInWithGoogle,
+  signOutFirebase,
+  savePlantToFirestore,
+  saveCycleToFirestore,
+  saveObservationToFirestore,
+  saveCareEventToFirestore,
+  syncLocalPlantsToFirestore,
+  getFirebaseProjectInfo,
+} from '../lib/firestore.js';
 
 // --- 1. ADD PLANT MODAL ---
 interface AddPlantModalProps {
@@ -39,13 +52,19 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({ isOpen, onClose, o
     if (!planName || !plantName || !species) return;
     setIsSubmitting(true);
     try {
-      await api.createPlant({
+      const res = await api.createPlant({
         plan_name: planName,
         plant_name: plantName,
         species,
         planting_date: plantingDate,
         notes,
       });
+      if (res?.plant) {
+        await savePlantToFirestore(res.plant);
+        if (res.cycle) {
+          await saveCycleToFirestore(res.plant, res.cycle);
+        }
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -152,11 +171,12 @@ export const AddPlantModal: React.FC<AddPlantModalProps> = ({ isOpen, onClose, o
 interface NewCycleModalProps {
   isOpen: boolean;
   plantId: string;
+  plant?: Plant;
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export const NewCycleModal: React.FC<NewCycleModalProps> = ({ isOpen, plantId, onClose, onSuccess }) => {
+export const NewCycleModal: React.FC<NewCycleModalProps> = ({ isOpen, plantId, plant, onClose, onSuccess }) => {
   const [cycleName, setCycleName] = useState('');
   const [objective, setObjective] = useState('');
   const [targetTemp, setTargetTemp] = useState(28.0);
@@ -173,7 +193,7 @@ export const NewCycleModal: React.FC<NewCycleModalProps> = ({ isOpen, plantId, o
     if (!cycleName) return;
     setIsSubmitting(true);
     try {
-      await api.createCycle(plantId, {
+      const res = await api.createCycle(plantId, {
         cycle_name: cycleName,
         objective,
         initial_targets: {
@@ -184,6 +204,9 @@ export const NewCycleModal: React.FC<NewCycleModalProps> = ({ isOpen, plantId, o
         },
         notes,
       });
+      if (plant && res?.cycle) {
+        await saveCycleToFirestore(plant, res.cycle);
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -303,6 +326,7 @@ export const NewCycleModal: React.FC<NewCycleModalProps> = ({ isOpen, plantId, o
 interface LogObservationModalProps {
   isOpen: boolean;
   plantId: string;
+  plant?: Plant;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -310,6 +334,7 @@ interface LogObservationModalProps {
 export const LogObservationModal: React.FC<LogObservationModalProps> = ({
   isOpen,
   plantId,
+  plant,
   onClose,
   onSuccess,
 }) => {
@@ -325,12 +350,15 @@ export const LogObservationModal: React.FC<LogObservationModalProps> = ({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.createObservation(plantId, {
+      const res = await api.createObservation(plantId, {
         plant_height: height,
         soil_ph: soilPh,
         health_observations: healthObs,
         notes,
       });
+      if (plant && res?.observation) {
+        await saveObservationToFirestore(plant, res.observation);
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -427,6 +455,7 @@ export const LogObservationModal: React.FC<LogObservationModalProps> = ({
 interface RecordCareModalProps {
   isOpen: boolean;
   plantId: string;
+  plant?: Plant;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -434,6 +463,7 @@ interface RecordCareModalProps {
 export const RecordCareModal: React.FC<RecordCareModalProps> = ({
   isOpen,
   plantId,
+  plant,
   onClose,
   onSuccess,
 }) => {
@@ -455,7 +485,7 @@ export const RecordCareModal: React.FC<RecordCareModalProps> = ({
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      await api.createCareEvent(plantId, {
+      const res = await api.createCareEvent(plantId, {
         event_type: eventType,
         zone: eventType === 'watering' ? zone : undefined,
         duration_seconds:
@@ -471,6 +501,9 @@ export const RecordCareModal: React.FC<RecordCareModalProps> = ({
         status: 'logged',
         notes,
       });
+      if (plant && res?.care_event) {
+        await saveCareEventToFirestore(plant, res.care_event);
+      }
       onSuccess();
       onClose();
     } catch (err) {
@@ -706,12 +739,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 
   const handleDemoSignIn = async () => {
     setIsSubmitting(true);
+    setErrorMsg(null);
     try {
       const res = await api.demoLogin();
       onSuccess(res.user);
       onClose();
     } catch (err) {
       setErrorMsg('Demo login failed');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setIsSubmitting(true);
+    setErrorMsg(null);
+    try {
+      const fbUser = await signInWithGoogle();
+      const demoRes = await api.demoLogin();
+      onSuccess({
+        ...demoRes.user,
+        full_name: fbUser.displayName || fbUser.email || demoRes.user.full_name,
+      });
+      onClose();
+    } catch (err) {
+      setErrorMsg(err instanceof Error ? err.message : 'Google Sign-In failed');
     } finally {
       setIsSubmitting(false);
     }
@@ -730,7 +782,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
         </div>
 
         <button
+          type="button"
+          onClick={handleGoogleSignIn}
+          disabled={isSubmitting}
+          className="w-full py-2.5 px-3 rounded-lg bg-[#174D36] hover:bg-[#206044] text-white text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition"
+        >
+          <Cloud className="w-4 h-4 text-[#DCEFE2]" />
+          <span>Sign in with Google (Firebase Cloud)</span>
+        </button>
+
+        <button
+          type="button"
           onClick={handleDemoSignIn}
+          disabled={isSubmitting}
           className="w-full py-2 px-3 rounded-lg bg-[#DCEFE2] hover:bg-[#c9e7d2] text-[#174D36] text-xs font-bold border border-[#39805B]/30 flex items-center justify-center gap-1.5 transition"
         >
           <Sparkles className="w-3.5 h-3.5 text-[#39805B]" />
@@ -826,15 +890,28 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess
 interface SettingsModalProps {
   isOpen: boolean;
   user: UserProfile | null;
+  firebaseUser?: FirebaseUser | null;
+  plants?: Plant[];
   onClose: () => void;
   onUpdate: (user: UserProfile) => void;
 }
 
-export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, user, onClose, onUpdate }) => {
+export const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  user,
+  firebaseUser,
+  plants = [],
+  onClose,
+  onUpdate,
+}) => {
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   if (!isOpen || !user) return null;
+
+  const projectInfo = getFirebaseProjectInfo();
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -847,6 +924,43 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, user, onCl
       alert('Error updating profile');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleConnectGoogle = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const fbUser = await signInWithGoogle();
+      const count = await syncLocalPlantsToFirestore(plants);
+      setSyncMessage(`Connected as ${fbUser.email || fbUser.uid}. Synced ${count} plant plans.`);
+    } catch (err) {
+      setSyncMessage(err instanceof Error ? err.message : 'Google Sign-In failed');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleSyncNow = async () => {
+    setIsSyncing(true);
+    setSyncMessage(null);
+    try {
+      const count = await syncLocalPlantsToFirestore(plants);
+      setSyncMessage(`Synced ${count} plant plans to Firestore.`);
+    } catch (err) {
+      setSyncMessage(err instanceof Error ? err.message : 'Firestore sync failed');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleDisconnectGoogle = async () => {
+    setIsSyncing(true);
+    try {
+      await signOutFirebase();
+      setSyncMessage('Disconnected from Firebase Google Auth.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -890,6 +1004,57 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, user, onCl
               value="System Owner / Principal Investigator"
               className="w-full px-3 py-2 rounded-lg border border-[#E2EAE4] bg-gray-100 text-[#718078]"
             />
+          </div>
+
+          {/* Firebase Firestore & Google Auth Cloud Sync */}
+          <div className="p-3 rounded-xl bg-[#F7FAF7] border border-[#E2EAE4] space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-[#174D36] flex items-center gap-1.5">
+                <Cloud className="w-3.5 h-3.5 text-[#39805B]" />
+                Firestore Cloud Sync
+              </span>
+              <span className="text-[10px] font-mono text-[#718078]">{projectInfo.projectId}</span>
+            </div>
+
+            {firebaseUser ? (
+              <div className="space-y-2">
+                <div className="flex items-center gap-1.5 text-[11px] text-emerald-700 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                  <span className="truncate">{firebaseUser.email || firebaseUser.displayName}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSyncNow}
+                    disabled={isSyncing}
+                    className="flex-1 py-1.5 px-2 rounded-lg bg-[#DCEFE2] hover:bg-[#c9e7d2] text-[#174D36] font-semibold text-[11px]"
+                  >
+                    {isSyncing ? 'Syncing...' : 'Sync Plans Now'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDisconnectGoogle}
+                    disabled={isSyncing}
+                    className="py-1.5 px-2 rounded-lg border border-[#E2EAE4] text-[#718078] hover:text-rose-600 text-[11px]"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={handleConnectGoogle}
+                disabled={isSyncing}
+                className="w-full py-1.5 px-3 rounded-lg bg-[#174D36] hover:bg-[#206044] text-white font-semibold text-[11px]"
+              >
+                {isSyncing ? 'Connecting...' : 'Sign in with Google to Sync'}
+              </button>
+            )}
+
+            {syncMessage && (
+              <p className="text-[10px] text-[#39805B] font-medium">{syncMessage}</p>
+            )}
           </div>
 
           <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#E2EAE4]">

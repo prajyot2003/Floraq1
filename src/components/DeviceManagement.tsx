@@ -276,7 +276,7 @@ export const DeviceManagement: React.FC<DeviceManagementProps> = ({
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
             </div>
             <p className="text-[11px] text-[#718078]">
-              Live UI listeners, 4-zone commands, Gemini diagnostics & logs
+              Live UI listeners, 4-zone commands, Groq AI diagnostics & logs
             </p>
             <div className="text-[10px] text-[#39805B] font-mono">Active Web Client</div>
           </div>

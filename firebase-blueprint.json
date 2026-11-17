@@ -1,0 +1,408 @@
+{
+  "entities": {
+    "UserPublic": {
+      "title": "UserPublic",
+      "description": "Non-PII cultivator profile metadata for FloraQ workspace ownership.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "role": {
+          "type": "string",
+          "enum": ["owner", "researcher", "operator"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "displayName", "role", "createdAt", "updatedAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Isolated PII record for authenticated FloraQ users.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "minLength": 3,
+          "maxLength": 254
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["uid", "email", "displayName", "createdAt", "updatedAt"]
+    },
+    "Plant": {
+      "title": "Plant",
+      "description": "Dynamic plant experiment plan bound to a Phytopod 360 chamber.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "planName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "displayNumber": {
+          "type": "number"
+        },
+        "plantName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "species": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "chamberId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "plantingDate": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 32
+        },
+        "status": {
+          "type": "string",
+          "enum": ["active", "completed", "archived"]
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "ownerId",
+        "planName",
+        "displayNumber",
+        "plantName",
+        "species",
+        "chamberId",
+        "plantingDate",
+        "status",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "GrowthCycle": {
+      "title": "GrowthCycle",
+      "description": "Growth phase or training cycle under a plant plan.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "plantId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "cycleNumber": {
+          "type": "number"
+        },
+        "cycleName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "status": {
+          "type": "string",
+          "enum": ["planned", "active", "paused", "completed"]
+        },
+        "startAt": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "plantId",
+        "ownerId",
+        "cycleNumber",
+        "cycleName",
+        "objective",
+        "status",
+        "startAt",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "DailyObservation": {
+      "title": "DailyObservation",
+      "description": "Manual plant height, soil pH, and foliar observation log.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "plantId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "cycleId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "observedAt": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64
+        },
+        "plantHeight": {
+          "type": "number"
+        },
+        "soilPh": {
+          "type": "number"
+        },
+        "healthObservations": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "plantId",
+        "ownerId",
+        "cycleId",
+        "observedAt",
+        "healthObservations",
+        "notes",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CareEvent": {
+      "title": "CareEvent",
+      "description": "Watering, fertilizer, pruning, or training care event record.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "plantId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "cycleId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "eventType": {
+          "type": "string",
+          "enum": ["watering", "fertilizer", "training", "pruning", "treatment"]
+        },
+        "eventTime": {
+          "type": "string",
+          "minLength": 4,
+          "maxLength": 64
+        },
+        "quantity": {
+          "type": "number"
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "method": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "productName": {
+          "type": "string",
+          "maxLength": 160
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        },
+        "source": {
+          "type": "string",
+          "enum": ["manual", "automated", "firebase_rtdb", "esp32_zone_control"]
+        },
+        "zone": {
+          "type": "string",
+          "maxLength": 32
+        },
+        "durationSeconds": {
+          "type": "number"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "plantId",
+        "ownerId",
+        "cycleId",
+        "eventType",
+        "eventTime",
+        "notes",
+        "source",
+        "createdAt",
+        "updatedAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublic" },
+      "description": "Non-PII profile document keyed by Firebase Auth UID."
+    },
+    "/users/{userId}/private/info": {
+      "schema": { "$ref": "#/entities/UserPrivate" },
+      "description": "Isolated PII document containing email and avatar URL."
+    },
+    "/plants/{plantId}": {
+      "schema": { "$ref": "#/entities/Plant" },
+      "description": "User-owned plant experiment plans synced across sessions."
+    },
+    "/plants/{plantId}/cycles/{cycleId}": {
+      "schema": { "$ref": "#/entities/GrowthCycle" },
+      "description": "Growth cycles belonging to a parent plant plan."
+    },
+    "/plants/{plantId}/observations/{observationId}": {
+      "schema": { "$ref": "#/entities/DailyObservation" },
+      "description": "Manual plant observations belonging to a parent plant plan."
+    },
+    "/plants/{plantId}/careEvents/{careEventId}": {
+      "schema": { "$ref": "#/entities/CareEvent" },
+      "description": "Irrigation, nutrient, and training events belonging to a parent plant plan."
+    }
+  }
+}

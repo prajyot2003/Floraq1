@@ -40,6 +40,15 @@ import {
   subscribeControls,
   FirebaseConnectionState,
 } from './lib/firebase.js';
+import { User as FirebaseUser } from 'firebase/auth';
+import {
+  subscribeFirebaseAuth,
+  signOutFirebase,
+  syncUserProfile,
+  subscribeCloudPlants,
+  subscribeCloudPlantSubcollections,
+  deletePlantFromFirestore,
+} from './lib/firestore.js';
 import {
   createEmptyTelemetrySnapshot,
   DEFAULT_CONTROLS_STATE,
@@ -79,6 +88,22 @@ export default function App() {
   const [isCareOpen, setIsCareOpen] = useState(false);
 
   const [loading, setLoading] = useState(true);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
+  const [firebaseAuthReady, setFirebaseAuthReady] = useState(false);
+
+  // Firebase Google Auth state listener
+  useEffect(() => {
+    const unsub = subscribeFirebaseAuth((fbUser, ready) => {
+      setFirebaseUser(fbUser);
+      setFirebaseAuthReady(ready);
+      if (fbUser && fbUser.emailVerified) {
+        syncUserProfile(fbUser).catch((err) => {
+          console.warn('[FloraQ Firestore] Profile sync failed:', err);
+        });
+      }
+    });
+    return () => unsub();
+  }, []);
 
   // 1. Initial Authentication & Profile bootstrap
   useEffect(() => {
@@ -202,6 +227,84 @@ export default function App() {
     };
   }, []);
 
+  // 4b. Firestore real-time cloud listeners (only attached when authenticated & verified)
+  useEffect(() => {
+    if (!firebaseAuthReady || !firebaseUser || !firebaseUser.emailVerified) {
+      return;
+    }
+
+    const unsubPlants = subscribeCloudPlants(
+      firebaseUser.uid,
+      (cloudPlants) => {
+        if (cloudPlants.length === 0) return;
+        setPlants((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          for (const cp of cloudPlants) {
+            const existing = map.get(cp.id);
+            map.set(cp.id, existing ? { ...existing, ...cp } : cp);
+          }
+          return Array.from(map.values());
+        });
+      },
+      (err) => {
+        console.warn('[FloraQ Firestore] Plants listener error:', err.message);
+      }
+    );
+
+    return () => {
+      unsubPlants();
+    };
+  }, [firebaseAuthReady, firebaseUser]);
+
+  useEffect(() => {
+    if (!firebaseAuthReady || !firebaseUser || !firebaseUser.emailVerified || !selectedPlantId) {
+      return;
+    }
+
+    const unsubSub = subscribeCloudPlantSubcollections(firebaseUser.uid, selectedPlantId, {
+      onCycles: (cloudCycles) => {
+        if (cloudCycles.length === 0) return;
+        setCycles((prev) => {
+          const map = new Map(prev.map((c) => [c.id, c]));
+          for (const cc of cloudCycles) {
+            const existing = map.get(cc.id);
+            map.set(cc.id, existing ? { ...existing, ...cc } : cc);
+          }
+          return Array.from(map.values());
+        });
+      },
+      onObservations: (cloudObs) => {
+        if (cloudObs.length === 0) return;
+        setObservations((prev) => {
+          const map = new Map(prev.map((o) => [o.id, o]));
+          for (const co of cloudObs) {
+            const existing = map.get(co.id);
+            map.set(co.id, existing ? { ...existing, ...co } : co);
+          }
+          return Array.from(map.values());
+        });
+      },
+      onCareEvents: (cloudCare) => {
+        if (cloudCare.length === 0) return;
+        setCareEvents((prev) => {
+          const map = new Map(prev.map((e) => [e.id, e]));
+          for (const ce of cloudCare) {
+            const existing = map.get(ce.id);
+            map.set(ce.id, existing ? { ...existing, ...ce } : ce);
+          }
+          return Array.from(map.values());
+        });
+      },
+      onError: (err) => {
+        console.warn('[FloraQ Firestore] Subcollection listener error:', err.message);
+      },
+    });
+
+    return () => {
+      unsubSub();
+    };
+  }, [firebaseAuthReady, firebaseUser, selectedPlantId]);
+
   // 5. Server-Sent Events (SSE) Bus Listener for Real-Time Telemetry & Hardware Events
   useEffect(() => {
     const eventSource = new EventSource('/api/v1/events');
@@ -289,6 +392,9 @@ export default function App() {
 
   const handleLogout = async () => {
     await api.logout();
+    if (firebaseUser) {
+      await signOutFirebase().catch(() => {});
+    }
     setUser(null);
     setIsAuthOpen(true);
   };
@@ -324,6 +430,7 @@ export default function App() {
           liveTelemetry.source === 'firebase_rtdb' &&
           Boolean(liveTelemetry.validation?.has_sensor_error)
         }
+        firebaseUserEmail={firebaseUser?.email ?? null}
       />
 
       {/* Main Container */}
@@ -349,6 +456,9 @@ export default function App() {
             }}
             onDeletePlant={async (pId) => {
               await api.deletePlant(pId);
+              if (firebaseUser) {
+                await deletePlantFromFirestore(pId).catch(() => {});
+              }
               refreshAllPlants();
             }}
           />
@@ -467,18 +577,21 @@ export default function App() {
           <NewCycleModal
             isOpen={isNewCycleOpen}
             plantId={currentPlant.id}
+            plant={currentPlant}
             onClose={() => setIsNewCycleOpen(false)}
             onSuccess={() => refreshSelectedPlantData(currentPlant.id)}
           />
           <LogObservationModal
             isOpen={isObservationOpen}
             plantId={currentPlant.id}
+            plant={currentPlant}
             onClose={() => setIsObservationOpen(false)}
             onSuccess={() => refreshSelectedPlantData(currentPlant.id)}
           />
           <RecordCareModal
             isOpen={isCareOpen}
             plantId={currentPlant.id}
+            plant={currentPlant}
             onClose={() => setIsCareOpen(false)}
             onSuccess={() => refreshSelectedPlantData(currentPlant.id)}
           />
@@ -494,6 +607,8 @@ export default function App() {
       <SettingsModal
         isOpen={isSettingsOpen}
         user={user}
+        firebaseUser={firebaseUser}
+        plants={plants}
         onClose={() => setIsSettingsOpen(false)}
         onUpdate={(updated) => setUser(updated)}
       />

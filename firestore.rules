@@ -1,0 +1,368 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Default-Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // Global Primitives
+    // =========================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == 'yadavr60003@gmail.com'
+      );
+    }
+
+    function isPlantOwner(plantId) {
+      return isSignedIn() &&
+        exists(/databases/$(database)/documents/plants/$(plantId)) &&
+        get(/databases/$(database)/documents/plants/$(plantId)).data.ownerId == request.auth.uid;
+    }
+
+    // =========================================================================
+    // Entity Validation Blueprints (Anti-Update-Gap)
+    // =========================================================================
+
+    function isValidUserPublic(data, userId) {
+      return data.keys().hasAll(['uid', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'role', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        data.role in ['owner', 'researcher', 'operator'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'displayName', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'displayName', 'photoURL', 'createdAt', 'updatedAt']) &&
+        isValidId(data.uid) &&
+        data.uid == userId &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidPlant(data, plantId) {
+      return data.keys().hasAll([
+          'id', 'ownerId', 'planName', 'displayNumber', 'plantName',
+          'species', 'chamberId', 'plantingDate', 'status', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'ownerId', 'planName', 'displayNumber', 'plantName',
+          'species', 'chamberId', 'plantingDate', 'status', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) &&
+        data.id == plantId &&
+        isValidId(data.ownerId) &&
+        data.planName is string && data.planName.size() >= 1 && data.planName.size() <= 120 &&
+        data.displayNumber is number && data.displayNumber >= 1 && data.displayNumber <= 100000 &&
+        data.plantName is string && data.plantName.size() >= 1 && data.plantName.size() <= 120 &&
+        data.species is string && data.species.size() >= 1 && data.species.size() <= 120 &&
+        data.chamberId is string && data.chamberId.size() >= 1 && data.chamberId.size() <= 64 &&
+        data.chamberId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.plantingDate is string && data.plantingDate.size() >= 4 && data.plantingDate.size() <= 32 &&
+        data.status in ['active', 'completed', 'archived'] &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidGrowthCycle(data, plantId, cycleId) {
+      return data.keys().hasAll([
+          'id', 'plantId', 'ownerId', 'cycleNumber', 'cycleName',
+          'objective', 'status', 'startAt', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'plantId', 'ownerId', 'cycleNumber', 'cycleName',
+          'objective', 'status', 'startAt', 'endAt', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) && data.id == cycleId &&
+        isValidId(data.plantId) && data.plantId == plantId &&
+        isValidId(data.ownerId) &&
+        data.cycleNumber is number && data.cycleNumber >= 1 && data.cycleNumber <= 10000 &&
+        data.cycleName is string && data.cycleName.size() >= 1 && data.cycleName.size() <= 120 &&
+        data.objective is string && data.objective.size() >= 1 && data.objective.size() <= 500 &&
+        data.status in ['planned', 'active', 'paused', 'completed'] &&
+        data.startAt is string && data.startAt.size() >= 4 && data.startAt.size() <= 64 &&
+        (!('endAt' in data) || (data.endAt is string && data.endAt.size() <= 64)) &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidDailyObservation(data, plantId, observationId) {
+      return data.keys().hasAll([
+          'id', 'plantId', 'ownerId', 'cycleId', 'observedAt',
+          'healthObservations', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'plantId', 'ownerId', 'cycleId', 'observedAt',
+          'plantHeight', 'soilPh', 'healthObservations', 'notes', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) && data.id == observationId &&
+        isValidId(data.plantId) && data.plantId == plantId &&
+        isValidId(data.ownerId) &&
+        isValidId(data.cycleId) &&
+        data.observedAt is string && data.observedAt.size() >= 4 && data.observedAt.size() <= 64 &&
+        (!('plantHeight' in data) || (data.plantHeight is number && data.plantHeight >= 0 && data.plantHeight <= 5000)) &&
+        (!('soilPh' in data) || (data.soilPh is number && data.soilPh >= 0 && data.soilPh <= 14)) &&
+        data.healthObservations is string && data.healthObservations.size() >= 1 && data.healthObservations.size() <= 1000 &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidCareEvent(data, plantId, careEventId) {
+      return data.keys().hasAll([
+          'id', 'plantId', 'ownerId', 'cycleId', 'eventType',
+          'eventTime', 'notes', 'source', 'createdAt', 'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'id', 'plantId', 'ownerId', 'cycleId', 'eventType',
+          'eventTime', 'quantity', 'unit', 'method', 'productName',
+          'notes', 'source', 'zone', 'durationSeconds', 'createdAt', 'updatedAt'
+        ]) &&
+        isValidId(data.id) && data.id == careEventId &&
+        isValidId(data.plantId) && data.plantId == plantId &&
+        isValidId(data.ownerId) &&
+        isValidId(data.cycleId) &&
+        data.eventType in ['watering', 'fertilizer', 'training', 'pruning', 'treatment'] &&
+        data.eventTime is string && data.eventTime.size() >= 4 && data.eventTime.size() <= 64 &&
+        (!('quantity' in data) || (data.quantity is number && data.quantity >= 0 && data.quantity <= 1000000)) &&
+        (!('unit' in data) || (data.unit is string && data.unit.size() <= 32)) &&
+        (!('method' in data) || (data.method is string && data.method.size() <= 160)) &&
+        (!('productName' in data) || (data.productName is string && data.productName.size() <= 160)) &&
+        data.notes is string && data.notes.size() <= 2000 &&
+        data.source in ['manual', 'automated', 'firebase_rtdb', 'esp32_zone_control'] &&
+        (!('zone' in data) || (data.zone is string && data.zone.size() <= 32)) &&
+        (!('durationSeconds' in data) || (data.durationSeconds is number && data.durationSeconds >= 0 && data.durationSeconds <= 86400)) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // =========================================================================
+    // Collection Rules
+    // =========================================================================
+
+    // Connectivity probe document (read-only ping for testConnection)
+    match /test/connection {
+      allow get: if isSignedIn();
+      allow list, write: if false;
+    }
+
+    // Admin registry (managed out-of-band / console)
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && request.auth.uid == adminId;
+      allow list, write: if false;
+    }
+
+    // User public profile (non-PII) & private PII split collection
+    match /users/{userId} {
+      allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+      allow list: if isAdmin();
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserPublic(incoming(), userId) &&
+        isOwner(userId) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserPublic(incoming(), userId) && (
+          isAdmin() || (
+            isOwner(userId) &&
+            incoming().uid == existing().uid &&
+            incoming().role == existing().role &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'updatedAt'])
+          )
+        );
+      allow delete: if isAdmin();
+
+      match /private/info {
+        allow get: if isValidId(userId) && (isOwner(userId) || isAdmin());
+        allow list: if false;
+        allow create: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidUserPrivate(incoming(), userId) &&
+          isOwner(userId) &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time;
+        allow update: if isVerifiedUser() &&
+          isValidId(userId) &&
+          isValidUserPrivate(incoming(), userId) && (
+            isAdmin() || (
+              isOwner(userId) &&
+              incoming().uid == existing().uid &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['email', 'displayName', 'photoURL', 'updatedAt'])
+            )
+          );
+        allow delete: if isAdmin();
+      }
+    }
+
+    // Top-level Plants Collection + Subcollections
+    match /plants/{plantId} {
+      allow get: if isValidId(plantId) && isSignedIn() && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+      allow create: if isVerifiedUser() &&
+        isValidId(plantId) &&
+        isValidPlant(incoming(), plantId) &&
+        incoming().ownerId == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(plantId) &&
+        isValidPlant(incoming(), plantId) && (
+          isAdmin() || (
+            existing().ownerId == request.auth.uid &&
+            existing().status != 'archived' &&
+            incoming().ownerId == existing().ownerId &&
+            incoming().id == existing().id &&
+            incoming().createdAt == existing().createdAt &&
+            incoming().updatedAt == request.time && (
+              // Action: Update plan details / notes
+              incoming().diff(existing()).affectedKeys().hasOnly(['planName', 'plantName', 'species', 'chamberId', 'notes', 'updatedAt']) ||
+              // Action: Transition plant status
+              incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])
+            )
+          )
+        );
+      allow delete: if isVerifiedUser() &&
+        isValidId(plantId) &&
+        (existing().ownerId == request.auth.uid || isAdmin());
+
+      // Growth Cycles Subcollection
+      match /cycles/{cycleId} {
+        allow get: if isValidId(plantId) && isValidId(cycleId) && (isPlantOwner(plantId) || isAdmin());
+        allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+        allow create: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(cycleId) &&
+          isValidGrowthCycle(incoming(), plantId, cycleId) &&
+          incoming().ownerId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isPlantOwner(plantId);
+        allow update: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(cycleId) &&
+          isValidGrowthCycle(incoming(), plantId, cycleId) && (
+            isAdmin() || (
+              isPlantOwner(plantId) &&
+              existing().ownerId == request.auth.uid &&
+              existing().status != 'completed' &&
+              incoming().id == existing().id &&
+              incoming().plantId == existing().plantId &&
+              incoming().ownerId == existing().ownerId &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time && (
+                // Action: Update cycle metadata
+                incoming().diff(existing()).affectedKeys().hasOnly(['cycleName', 'objective', 'notes', 'updatedAt']) ||
+                // Action: Transition cycle status / endAt
+                incoming().diff(existing()).affectedKeys().hasOnly(['status', 'endAt', 'updatedAt'])
+              )
+            )
+          );
+        allow delete: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(cycleId) &&
+          (isPlantOwner(plantId) || isAdmin());
+      }
+
+      // Daily Observations Subcollection
+      match /observations/{observationId} {
+        allow get: if isValidId(plantId) && isValidId(observationId) && (isPlantOwner(plantId) || isAdmin());
+        allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+        allow create: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(observationId) &&
+          isValidDailyObservation(incoming(), plantId, observationId) &&
+          incoming().ownerId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isPlantOwner(plantId);
+        allow update: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(observationId) &&
+          isValidDailyObservation(incoming(), plantId, observationId) && (
+            isAdmin() || (
+              isPlantOwner(plantId) &&
+              existing().ownerId == request.auth.uid &&
+              incoming().id == existing().id &&
+              incoming().plantId == existing().plantId &&
+              incoming().ownerId == existing().ownerId &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['plantHeight', 'soilPh', 'healthObservations', 'notes', 'updatedAt'])
+            )
+          );
+        allow delete: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(observationId) &&
+          (isPlantOwner(plantId) || isAdmin());
+      }
+
+      // Care Events Subcollection
+      match /careEvents/{careEventId} {
+        allow get: if isValidId(plantId) && isValidId(careEventId) && (isPlantOwner(plantId) || isAdmin());
+        allow list: if isSignedIn() && (resource.data.ownerId == request.auth.uid || isAdmin());
+        allow create: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(careEventId) &&
+          isValidCareEvent(incoming(), plantId, careEventId) &&
+          incoming().ownerId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          incoming().updatedAt == request.time &&
+          isPlantOwner(plantId);
+        allow update: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(careEventId) &&
+          isValidCareEvent(incoming(), plantId, careEventId) && (
+            isAdmin() || (
+              isPlantOwner(plantId) &&
+              existing().ownerId == request.auth.uid &&
+              incoming().id == existing().id &&
+              incoming().plantId == existing().plantId &&
+              incoming().ownerId == existing().ownerId &&
+              incoming().createdAt == existing().createdAt &&
+              incoming().updatedAt == request.time &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['notes', 'updatedAt'])
+            )
+          );
+        allow delete: if isVerifiedUser() &&
+          isValidId(plantId) && isValidId(careEventId) &&
+          (isPlantOwner(plantId) || isAdmin());
+      }
+    }
+  }
+}

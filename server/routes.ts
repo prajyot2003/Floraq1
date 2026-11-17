@@ -19,7 +19,13 @@ import {
   destroySession,
   AuthenticatedRequest,
 } from './auth.js';
-import { analyzePlantImage, generateGrowthScenarioVisualization } from './gemini.js';
+import {
+  analyzePlantImage,
+  generateGrowthScenarioVisualization,
+  listAvailableGroqModels,
+  GROQ_VISION_MODEL,
+  GROQ_TEXT_MODEL,
+} from './groq.js';
 
 export const apiRouter = express.Router();
 
@@ -1554,36 +1560,36 @@ apiRouter.post('/camera/schedule', requireAuth, (req: AuthenticatedRequest, res)
 // 11. AI PLANT DISEASE DETECTION & GROWTH VISUALIZATION
 // -------------------------------------------------------------
 
-/**
- * POST /api/v1/images/:imageId/analyze
- * Submits image to Gemini multimodal model for disease/stress detection
- */
-apiRouter.post('/images/:imageId/analyze', requireAuth, async (req: AuthenticatedRequest, res) => {
-  const image = db.getImageById(req.params.imageId);
-  if (!image || image.owner_id !== req.user!.id) {
-    res.status(404).json({ error: 'Image not found.' });
-    return;
-  }
+  /**
+   * POST /api/v1/images/:imageId/analyze
+   * Submits image to Groq multimodal model for disease/stress detection
+   */
+  apiRouter.post('/images/:imageId/analyze', requireAuth, async (req: AuthenticatedRequest, res) => {
+    const image = db.getImageById(req.params.imageId);
+    if (!image || image.owner_id !== req.user!.id) {
+      res.status(404).json({ error: 'Image not found.' });
+      return;
+    }
 
-  const plant = db.getPlantById(image.plant_id);
-  if (!plant) {
-    res.status(404).json({ error: 'Associated plant record not found.' });
-    return;
-  }
+    const plant = db.getPlantById(image.plant_id);
+    if (!plant) {
+      res.status(404).json({ error: 'Associated plant record not found.' });
+      return;
+    }
 
-  // Create queued record
-  const analysisId = `ai-ana-${Date.now()}`;
-  const initialRecord: AIAnalysis = {
-    id: analysisId,
-    owner_id: req.user!.id,
-    image_id: image.id,
-    plant_id: plant.id,
-    cycle_id: image.cycle_id,
-    analysis_type: 'disease_and_stress',
-    model_identifier: 'gemini-4-hydrogen',
-    status: 'processing',
-    created_at: new Date().toISOString(),
-  };
+    // Create queued record
+    const analysisId = `ai-ana-${Date.now()}`;
+    const initialRecord: AIAnalysis = {
+      id: analysisId,
+      owner_id: req.user!.id,
+      image_id: image.id,
+      plant_id: plant.id,
+      cycle_id: image.cycle_id,
+      analysis_type: 'disease_and_stress',
+      model_identifier: GROQ_VISION_MODEL,
+      status: 'processing',
+      created_at: new Date().toISOString(),
+    };
 
   db.saveAIAnalysis(initialRecord);
 
@@ -1604,6 +1610,9 @@ apiRouter.post('/images/:imageId/analyze', requireAuth, async (req: Authenticate
       light_intensity: getVal('light_intensity'),
     });
 
+    if (analysisResult.model_used) {
+      initialRecord.model_identifier = analysisResult.model_used;
+    }
     initialRecord.status = 'completed';
     initialRecord.result_json = analysisResult;
     initialRecord.completed_at = new Date().toISOString();
@@ -1668,7 +1677,7 @@ apiRouter.post('/images/generate-visualization', requireAuth, async (req: Authen
       storage_key: `visualizations/${plant.id}/${vizId}.svg`,
       image_data_url: result.svg_data_url,
       prompt_description: promptText,
-      model_identifier: 'gemini-4-hydrogen',
+      model_identifier: result.model_used || GROQ_TEXT_MODEL,
       created_at: new Date().toISOString(),
       visualization_label: result.visualization_label,
       projected_parameters: result.projected_parameters,
@@ -1682,6 +1691,18 @@ apiRouter.post('/images/generate-visualization', requireAuth, async (req: Authen
     res.status(500).json({
       error: 'Generation Failed',
       message: err instanceof Error ? err.message : 'Unable to synthesize visualization.',
+    });
+  }
+});
+
+apiRouter.get('/ai/models', requireAuth, async (_req: AuthenticatedRequest, res) => {
+  try {
+    const models = await listAvailableGroqModels();
+    res.json({ provider: 'groq', models });
+  } catch (err: unknown) {
+    res.status(500).json({
+      error: 'Groq Model Lookup Failed',
+      message: err instanceof Error ? err.message : 'Unable to query Groq models.',
     });
   }
 });

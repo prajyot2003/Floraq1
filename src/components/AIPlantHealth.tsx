@@ -192,7 +192,7 @@ export const AIPlantHealth: React.FC<AIPlantHealthProps> = ({
                   {isAnalyzing ? (
                     <>
                       <RefreshCw className="w-4 h-4 animate-spin text-emerald-300" />
-                      <span>Inspecting foliage with Gemini Vision...</span>
+                      <span>Inspecting foliage with Groq Vision...</span>
                     </>
                   ) : (
                     <>
@@ -368,7 +368,7 @@ export const AIPlantHealth: React.FC<AIPlantHealthProps> = ({
               <BrainCircuit className="w-12 h-12 text-[#39805B] mx-auto mb-3 opacity-60" />
               <h3 className="text-base font-bold text-[#20352A]">No Analysis Loaded</h3>
               <p className="text-xs text-[#718078] mt-1 max-w-sm mx-auto">
-                Select a photograph from the left and click "Analyze This Photograph" to initiate the Gemini AI plant health inspection.
+                Select a photograph from the left and click "Analyze This Photograph" to initiate the Groq AI plant health inspection.
               </p>
             </div>
           )}

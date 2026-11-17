@@ -12,6 +12,7 @@ import {
   LogOut,
   User,
   Radio,
+  Cloud,
 } from 'lucide-react';
 import { UserProfile } from '../types.js';
 
@@ -26,6 +27,7 @@ interface NavbarProps {
   isStreamActive: boolean;
   firebaseConnected?: boolean;
   hasSensorError?: boolean;
+  firebaseUserEmail?: string | null;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -39,6 +41,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   isStreamActive,
   firebaseConnected = false,
   hasSensorError = false,
+  firebaseUserEmail = null,
 }) => {
   const navItems = [
     { id: 'dashboard', label: 'Plants & Plans', icon: Sprout },
@@ -107,9 +110,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={onOpenSettings}
                   className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-[#143B2A] hover:bg-[#1C4A35] text-xs text-[#DCEFE2] border border-[#2A6547] transition"
-                  title="Profile and settings"
+                  title={firebaseUserEmail ? `Cloud Synced: ${firebaseUserEmail}` : 'Profile and settings'}
                 >
-                  <User className="w-3.5 h-3.5 text-emerald-300" />
+                  {firebaseUserEmail ? (
+                    <Cloud className="w-3.5 h-3.5 text-emerald-300" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 text-emerald-300" />
+                  )}
                   <span className="max-w-[120px] truncate hidden md:inline">{user.full_name}</span>
                 </button>
                 <button

@@ -915,7 +915,7 @@ class FloraQDatabase {
       plant_id: 'plant-rose-01',
       cycle_id: 'cycle-rose-c2',
       analysis_type: 'disease_and_stress',
-      model_identifier: 'gemini-3.8-flash',
+      model_identifier: 'qwen/qwen3.8-27b',
       status: 'completed',
       result_json: {
         overall_health: 'healthy',

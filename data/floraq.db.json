@@ -3694,6 +3694,113 @@
   ],
   "ai_analyses": [
     {
+      "id": "ai-ana-1794893963279",
+      "owner_id": "user-owner-001",
+      "image_id": "img-rose-recent-01",
+      "plant_id": "plant-rose-01",
+      "cycle_id": "cycle-rose-c2",
+      "analysis_type": "disease_and_stress",
+      "model_identifier": "qwen/qwen3.8-27b",
+      "status": "completed",
+      "created_at": "2026-11-17T05:39:23.279Z",
+      "result_json": {
+        "overall_health": "inconclusive",
+        "confidence_score": 0.5,
+        "image_quality_check": {
+          "suitable_for_diagnosis": false,
+          "issues_detected": [
+            "No plant tissue visible",
+            "Image is a solid color field",
+            "Lack of visual data for symptom analysis"
+          ]
+        },
+        "visible_symptoms": [],
+        "possible_conditions": [],
+        "growth_estimates": {
+          "canopy_coverage_percent": 0,
+          "estimated_leaf_count": 0,
+          "visible_vigor_rating": 0,
+          "calibration_note": "2D cameras lack depth triangulation without physical reference rulers; no plant material detected in frame."
+        },
+        "conservative_recommendations": [
+          "Verify camera alignment and focus",
+          "Ensure the plant is within the field of view",
+          "Check for sensor malfunction or obstruction"
+        ],
+        "suggested_follow_up": "Retake image with clear view of plant foliage and stems",
+        "scientific_disclaimer": "This analysis is based on visual data provided. No diagnosis can be made without visible plant tissue. Environmental telemetry suggests potential stress factors (0°C, 0 lux), but visual confirmation is required.",
+        "model_used": "qwen/qwen3.8-27b"
+      },
+      "completed_at": "2026-11-17T05:39:24.451Z"
+    },
+    {
+      "id": "ai-ana-1794893939472",
+      "owner_id": "user-owner-001",
+      "image_id": "img-rose-recent-01",
+      "plant_id": "plant-rose-01",
+      "cycle_id": "cycle-rose-c2",
+      "analysis_type": "disease_and_stress",
+      "model_identifier": "qwen/qwen3.8-27b",
+      "status": "failed",
+      "created_at": "2026-11-17T05:38:59.472Z",
+      "error_summary": "Groq API Error (400): invalid image data",
+      "completed_at": "2026-11-17T05:38:59.821Z"
+    },
+    {
+      "id": "ai-ana-1794893905772",
+      "owner_id": "user-owner-001",
+      "image_id": "img-rose-recent-01",
+      "plant_id": "plant-rose-01",
+      "cycle_id": "cycle-rose-c2",
+      "analysis_type": "disease_and_stress",
+      "model_identifier": "openai/gpt-oss-120b",
+      "status": "completed",
+      "created_at": "2026-11-17T05:38:25.772Z",
+      "result_json": {
+        "overall_health": "inconclusive",
+        "confidence_score": 0.1,
+        "image_quality_check": {
+          "suitable_for_diagnosis": false,
+          "issues_detected": [
+            "vector SVG preview, not a raster image",
+            "no visible plant tissue details",
+            "insufficient lighting (0 lux)"
+          ]
+        },
+        "visible_symptoms": [],
+        "possible_conditions": [],
+        "growth_estimates": {
+          "canopy_coverage_percent": 0,
+          "estimated_leaf_count": 0,
+          "visible_vigor_rating": 0,
+          "calibration_note": "Estimates unavailable due to lack of photographic data; 2D imaging without scale reference limits accuracy."
+        },
+        "conservative_recommendations": [
+          "Maintain temperature above 15 °C for Rosa hybrid grandiflora",
+          "Increase relative humidity to 60‑70 % if wilting observed",
+          "Raise soil moisture to 40‑60 % using consistent watering schedule",
+          "Capture a clear, well‑lit JPEG/PNG image with the chamber’s Raspberry Pi camera for diagnostic analysis"
+        ],
+        "suggested_follow_up": "Acquire a properly illuminated, high‑resolution raster image of the plant and re‑run the diagnostic engine.",
+        "scientific_disclaimer": "The assessment is based solely on telemetry and the provided SVG schematic, not on visual plant tissue evidence. No definitive disease diagnosis can be made without appropriate imagery. Recommendations are general horticultural best practices.",
+        "model_used": "openai/gpt-oss-120b"
+      },
+      "completed_at": "2026-11-17T05:38:28.180Z"
+    },
+    {
+      "id": "ai-ana-1794893851610",
+      "owner_id": "user-owner-001",
+      "image_id": "img-rose-recent-01",
+      "plant_id": "plant-rose-01",
+      "cycle_id": "cycle-rose-c2",
+      "analysis_type": "disease_and_stress",
+      "model_identifier": "meta-llama/llama-4-scout-17b-16e-instruct",
+      "status": "failed",
+      "created_at": "2026-11-17T05:37:31.610Z",
+      "error_summary": "Groq API Error (404): The model `meta-llama/llama-4-scout-17b-16e-instruct` does not exist or you do not have access to it.",
+      "completed_at": "2026-11-17T05:37:31.788Z"
+    },
+    {
       "id": "ai-ana-1794590497459",
       "owner_id": "user-owner-001",
       "image_id": "img-rose-recent-01",
@@ -3872,7 +3979,46 @@
       "completed_at": "2026-10-13T05:06:45.332Z"
     }
   ],
-  "generated_visualizations": [],
+  "generated_visualizations": [
+    {
+      "id": "viz-1794893948067",
+      "owner_id": "user-owner-001",
+      "plant_id": "plant-rose-01",
+      "cycle_id": "cycle-rose-c2",
+      "storage_key": "visualizations/plant-rose-01/viz-1794893948067.svg",
+      "image_data_url": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%20600%22%20width%3D%22800%22%20height%3D%22600%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23142B20%22%2F%3E%3Cline%20x1%3D%22400%22%20y1%3D%22550%22%20x2%3D%22400%22%20y2%3D%22150%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%224%22%2F%3E%3Ccircle%20cx%3D%22400%22%20cy%3D%22150%22%20r%3D%228%22%20fill%3D%22%23DCEFE2%22%2F%3E%3Ctext%20x%3D%22410%22%20y%3D%22155%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3EApical%20Meristem%3C%2Ftext%3E%3Cline%20x1%3D%22400%22%20y1%3D%22500%22%20x2%3D%22320%22%20y2%3D%22450%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%22320%22%20cy%3D%22450%22%20r%3D%226%22%20fill%3D%22%23DCEFE2%22%2F%3E%3Ctext%20x%3D%22280%22%20y%3D%22445%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ENode%203%3C%2Ftext%3E%3Cline%20x1%3D%22400%22%20y1%3D%22450%22%20x2%3D%22480%22%20y2%3D%22400%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%22480%22%20cy%3D%22400%22%20r%3D%226%22%20fill%3D%22%23DCEFE2%22%2F%3E%3Ctext%20x%3D%22490%22%20y%3D%22395%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ENode%205%3C%2Ftext%3E%3Cline%20x1%3D%22400%22%20y1%3D%22400%22%20x2%3D%22320%22%20y2%3D%22350%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%22320%22%20cy%3D%22350%22%20r%3D%226%22%20fill%3D%22%23DCEFE2%22%2F%3E%3Ctext%20x%3D%22280%22%20y%3D%22345%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ENode%207%3C%2Ftext%3E%3Cline%20x1%3D%22400%22%20y1%3D%22350%22%20x2%3D%22480%22%20y2%3D%22300%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%22480%22%20cy%3D%22300%22%20r%3D%226%22%20fill%3D%22%23DCEFE2%22%2F%3E%3Ctext%20x%3D%22490%22%20y%3D%22295%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ENode%209%3C%2Ftext%3E%3Cline%20x1%3D%22400%22%20y1%3D%22300%22%20x2%3D%22320%22%20y2%3D%22250%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%223%22%2F%3E%3Ccircle%20cx%3D%22320%22%20cy%3D%22250%22%20r%3D%226%22%20fill%3D%22%23DCEFE2%22%2F%3E%3Ctext%20x%3D%22280%22%20y%3D%22245%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2212%22%3ENode%2011%3C%2Ftext%3E%3Cpath%20d%3D%22M%20320%20450%20Q%20280%20420%20250%20440%20Q%20280%20460%20320%20450%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M%20480%20400%20Q%20520%20370%20550%20390%20Q%20520%20410%20480%20400%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M%20320%20350%20Q%20280%20320%20250%20340%20Q%20280%20360%20320%20350%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M%20480%20300%20Q%20520%20270%20550%20290%20Q%20520%20310%20480%20300%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M%20320%20250%20Q%20280%20220%20250%20240%20Q%20280%20260%20320%20250%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M%20400%20150%20Q%20360%20120%20330%20140%20Q%20360%20160%20400%20150%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Cpath%20d%3D%22M%20400%20150%20Q%20440%20120%20470%20140%20Q%20440%20160%20400%20150%22%20fill%3D%22none%22%20stroke%3D%22%234EA87A%22%20stroke-width%3D%222%22%2F%3E%3Ctext%20x%3D%22400%22%20y%3D%22580%22%20fill%3D%22%23DCEFE2%22%20font-family%3D%22Arial%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%3ERosa%20hybrid%20grandiflora%20-%2014%20Day%20Canopy%20Projection%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "prompt_description": "14 day canopy test",
+      "model_identifier": "qwen/qwen3.8-27b",
+      "created_at": "2026-11-17T05:39:08.067Z",
+      "visualization_label": "AI-generated visualization",
+      "projected_parameters": {
+        "estimated_height_cm": "45",
+        "canopy_diameter_cm": "60",
+        "projected_nodes": "12",
+        "optimal_vpd_kpa": "0.8"
+      },
+      "scenario_description": "Over a 14-day period, the Rosa hybrid grandiflora in the Early Vegetative Expansion stage is projected to exhibit accelerated apical dominance, with primary stem elongation reaching approximately 45 cm. The internode length will increase by 15-20% per week, driven by optimal auxin distribution. Lateral branching will emerge at nodes 3, 5, and 7, with a consistent branching angle of 45 degrees relative to the main stem, promoting a conical canopy structure. Leaf nodes will expand to a total of 12, with each leaflet pair achieving full turgor and chlorophyll saturation. The canopy diameter is expected to reach 60 cm, forming a dense, overlapping layer that maximizes light interception while maintaining airflow to prevent fungal pressure. Stomatal conductance will be optimized to maintain a Vapor Pressure Deficit (VPD) of 0.8 kPa, ensuring efficient transpiration without water stress."
+    },
+    {
+      "id": "viz-1794893905753",
+      "owner_id": "user-owner-001",
+      "plant_id": "plant-rose-01",
+      "cycle_id": "cycle-rose-c2",
+      "storage_key": "visualizations/plant-rose-01/viz-1794893905753.svg",
+      "image_data_url": "data:image/svg+xml;utf8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%20800%20600%22%20width%3D%22800%22%20height%3D%22600%22%3E%3Crect%20width%3D%22800%22%20height%3D%22600%22%20fill%3D%22%23142B20%22%2F%3E%3Ctext%20x%3D%22100%22%20y%3D%22300%22%20fill%3D%22%23DCEFE2%22%20font-size%3D%2220%22%3EFloraQ%20Projected%20Canopy%20Model%3C%2Ftext%3E%3C%2Fsvg%3E",
+      "prompt_description": "14 day vegetative test",
+      "model_identifier": "openai/gpt-oss-120b",
+      "created_at": "2026-11-17T05:38:25.753Z",
+      "visualization_label": "AI-generated visualization",
+      "projected_parameters": {
+        "estimated_height_cm": "12",
+        "canopy_diameter_cm": "15",
+        "projected_nodes": "7",
+        "optimal_vpd_kpa": "0.9"
+      },
+      "scenario_description": "In a controlled 14‑day vegetative test, Rosa hybrid grandiflora exhibits a rapid early stem elongation of approximately 0.8 cm day⁻¹, driven by optimal temperature (22‑24 °C) and a moderate vapor‑pressure deficit (VPD) of 0.9 kPa. New leaf nodes emerge roughly every 2 days, yielding an estimated seven node pairs by day 14. Each node initiates a bifurcating branch set at a 45° angle from the main axis, promoting a balanced, open canopy. The cumulative effect produces a compact, conical canopy with a projected total height of ~12 cm and a lateral spread of ~15 cm. Maintaining a VPD of 0.8‑1.0 kPa ensures maximal stomatal conductance without inducing transpiration stress, supporting the observed vigor and leaf expansion."
+    }
+  ],
   "gateway_sync_logs": [
     {
       "id": "sync-log-001",

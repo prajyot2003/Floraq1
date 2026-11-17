@@ -1,4 +1,4 @@
-import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import {
   getDatabase,
   Database,
@@ -98,18 +98,21 @@ export function getFirebaseDatabase(): Database | null {
 
   const cfg = getEnvConfig();
   try {
+    const rtdbAppName = 'phytopod-rtdb';
     cachedApp =
-      getApps().length > 0
-        ? getApp()
-        : initializeApp({
-            apiKey: cfg.apiKey || undefined,
-            authDomain: cfg.authDomain || undefined,
-            databaseURL: cfg.databaseURL,
-            projectId: cfg.projectId || undefined,
-            storageBucket: cfg.storageBucket || undefined,
-            messagingSenderId: cfg.messagingSenderId || undefined,
-            appId: cfg.appId || undefined,
-          });
+      getApps().find((a) => a.name === rtdbAppName) ||
+      initializeApp(
+        {
+          apiKey: cfg.apiKey || undefined,
+          authDomain: cfg.authDomain || undefined,
+          databaseURL: cfg.databaseURL,
+          projectId: cfg.projectId || undefined,
+          storageBucket: cfg.storageBucket || undefined,
+          messagingSenderId: cfg.messagingSenderId || undefined,
+          appId: cfg.appId || undefined,
+        },
+        rtdbAppName
+      );
     cachedDb = getDatabase(cachedApp);
     return cachedDb;
   } catch (err) {
