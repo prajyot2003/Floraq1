@@ -83,7 +83,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
       if (refreshTimerRef.current) clearInterval(refreshTimerRef.current);
       refreshTimerRef.current = setInterval(() => {
         setLastFrameTime(new Date().toLocaleTimeString());
-      }, 3000);
+      }, 1000);
     } catch (err) {
       console.error('Failed to start camera session:', err);
       setStreamStatus('error');
@@ -240,7 +240,7 @@ export const LiveCamera: React.FC<LiveCameraProps> = ({
                     <span>LIVE STREAM ACTIVE</span>
                   </div>
                   <div className="px-2 py-1 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-mono text-[#DCEFE2]">
-                    Snapshot Refresh Mode (3s)
+                    Snapshot Refresh Mode (1s)
                   </div>
                 </div>
 
