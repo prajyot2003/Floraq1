@@ -91,7 +91,9 @@ void setZoneOutput(int idx, bool on) {
 }
 
 void syncControlsFromFirebase() {
-  if (!firebaseReady) return;
+  // Firebase.ready() is non-blocking; skip RTDB calls until the auth token exists,
+  // otherwise each call stalls the loop and the Pi never gets serial JSON.
+  if (!firebaseReady || !Firebase.ready()) return;
   for (int i = 0; i < 4; i++) {
     String path = "/commands/water_zone_" + String(i + 1);
     if (Firebase.RTDB.getInt(&fbData, path.c_str())) {
@@ -107,7 +109,7 @@ void enforceRuntimeLockout() {
     if (zoneActive[i] && (now - zoneStartedAt[i] >= MAX_ZONE_RUNTIME_MS)) {
       zoneLockout[i] = true;
       setZoneOutput(i, false);
-      if (firebaseReady) {
+      if (firebaseReady && Firebase.ready()) {
         String cmdPath = "/commands/water_zone_" + String(i + 1);
         Firebase.RTDB.setInt(&fbData, cmdPath.c_str(), 0);
       }
@@ -191,7 +193,7 @@ void loop() {
     Serial.println();
 
     // 2. Push snapshot to Firebase RTDB /telemetry
-    if (firebaseReady && WiFi.status() == WL_CONNECTED) {
+    if (firebaseReady && WiFi.status() == WL_CONNECTED && Firebase.ready()) {
       FirebaseJson fbJson;
       String serialized;
       serializeJson(doc, serialized);

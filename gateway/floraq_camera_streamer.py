@@ -35,37 +35,46 @@ IMAGES_URL = f"{config['cloud_camera_url']}/images"
 GATEWAY_KEY = config["gateway_api_key"]
 CHAMBER_ID = config["chamber_id"]
 
+_picam2 = None
+
+
 def capture_hardware_frame():
     """
-    Attempts to read frame from picamera2 / OpenCV / /dev/video0.
-    Falls back gracefully to high-res synthesized test frame if running outside physical hardware.
+    Captures one JPEG frame from the RPi camera (Picamera2).
+    The camera is opened once and reused: opening a new Picamera2() per frame
+    without closing it leaves libcamera in 'Configured' state and every later
+    frame fails ("Camera __init__ sequence did not complete").
+    Returns None if the camera is unavailable, so no fake frame is uploaded.
     """
+    global _picam2
     try:
-        # Check if picamera2 is available on RPi OS
-        from picamera2 import Picamera2
-        picam2 = Picamera2()
-        config_cam = picam2.create_preview_configuration(main={"size": (1920, 1080)})
-        picam2.configure(config_cam)
-        picam2.start()
-        frame = picam2.capture_array()
-        picam2.stop()
-        img = Image.fromarray(frame)
+        if _picam2 is None:
+            from picamera2 import Picamera2
+            _picam2 = Picamera2()
+            _picam2.configure(_picam2.create_preview_configuration(main={"size": (1920, 1080), "format": "RGB888"}))
+            _picam2.start()
+            time.sleep(1)  # let auto-exposure settle
+        frame = _picam2.capture_array()
+        img = Image.fromarray(frame[:, :, ::-1])  # RGB888 buffer is BGR order
         buffer = BytesIO()
         img.save(buffer, format="JPEG", quality=85)
         return buffer.getvalue()
     except Exception as e:
-        logger.debug(f"Picamera2 hardware not detected ({e}), using software camera simulation frame.")
-
-    # High quality clean botanical frame simulation
-    img = Image.new("RGB", (640, 480), color=(20, 43, 32))
-    buffer = BytesIO()
-    img.save(buffer, format="JPEG", quality=80)
-    return buffer.getvalue()
+        logger.warning(f"Camera capture failed ({e}); will reopen on next attempt.")
+        if _picam2 is not None:
+            try:
+                _picam2.close()
+            except Exception:
+                pass
+            _picam2 = None
+        return None
 
 def push_live_snapshot():
     """Pushes a low-latency frame to backend for live view monitoring."""
     try:
         raw_bytes = capture_hardware_frame()
+        if raw_bytes is None:
+            return
         b64 = base64.b64encode(raw_bytes).decode("utf-8")
         data_url = f"data:image/jpeg;base64,{b64}"
 
@@ -79,6 +88,8 @@ def push_live_snapshot():
         resp = requests.post(SNAPSHOT_URL, json=payload, headers=headers, timeout=5)
         if resp.status_code == 200:
             logger.debug("Successfully pushed live frame to FloraQ cloud.")
+        else:
+            logger.warning(f"Live frame upload HTTP {resp.status_code}: {resp.text[:200]}")
     except Exception as e:
         logger.warning(f"Failed to push live frame: {e}")
 
